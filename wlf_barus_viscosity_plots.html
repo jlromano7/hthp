@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viscosidade Plástica 3D - WLF-Barus</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        h2 {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+        .plot-container {
+            margin: 30px 0;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+        }
+        select, input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .equation {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        .ref-conditions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .ref-conditions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        @media (max-width: 1200px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+        .stats-box {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .pressure-info {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Análise 3D de Viscosidade Plástica</h1>
+        <h2>Modelo WLF-Barus para Fluidos de Perfuração</h2>
+        
+        <div class="info-box">
+            <strong>Equação WLF-Barus:</strong>
+            <div class="equation">
+                η(T,P) = η<sub>ref</sub> × exp(-2.303 × c₁ × (T - T<sub>ref</sub>)/(c₂ + (T - T<sub>ref</sub>)) + (β₀ + β₁(T - T<sub>ref</sub>))(P - P<sub>ref</sub>))
+            </div>
+        </div>
+        
+        <div class="ref-conditions">
+            <strong>Condições de Referência:</strong>
+            <ul>
+                <li><strong>FP20:</strong> T<sub>ref</sub> = 25°C, P<sub>ref</sub> = 1 bar, η<sub>ref</sub> = 38.5 mPa·s</li>
+                <li><strong>SR10:</strong> T<sub>ref</sub> = 80°C, P<sub>ref</sub> = 1 bar, η<sub>ref</sub> = 16.0 mPa·s</li>
+                <li><strong>B34:</strong> T<sub>ref</sub> = 80°C, P<sub>ref</sub> = 1 bar, η<sub>ref</sub> = 29.0 mPa·s</li>
+                <li><strong>B128:</strong> T<sub>ref</sub> = 80°C, P<sub>ref</sub> = 1 bar, η<sub>ref</sub> = 60.0 mPa·s</li>
+            </ul>
+        </div>
+        
+        <div class="pressure-info">
+            <strong>Faixa de Pressão:</strong> 1 - 600 bar
+            <ul>
+                <li>Adequada para poços até ~4000m com fluido de densidade 1.5 SG</li>
+                <li>Cobre a maioria das aplicações de perfuração onshore e offshore</li>
+            </ul>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="fluidSelect">Fluido:</label>
+                <select id="fluidSelect" onchange="updatePlots()">
+                    <option value="FP20">FP20</option>
+                    <option value="SR10">SR10</option>
+                    <option value="B34">B34</option>
+                    <option value="B128">B128</option>
+                    <option value="all">Todos (Comparação)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="plotType">Tipo de Visualização:</label>
+                <select id="plotType" onchange="updatePlots()">
+                    <option value="surface">Superfície 3D</option>
+                    <option value="contour">Contorno (Heatmap)</option>
+                    <option value="both">Ambos</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="logScale">Escala de Viscosidade:</label>
+                <select id="logScale" onchange="updatePlots()">
+                    <option value="log">Logarítmica</option>
+                    <option value="linear">Linear</option>
+                </select>
+            </div>
+            
+            <button onclick="resetView()">Resetar Vista 3D</button>
+        </div>
+        
+        <div id="mainPlotContainer"></div>
+        
+        <div class="stats-box" id="statsBox" style="display: none;">
+            <h3>Estatísticas do Fluido Selecionado</h3>
+            <div class="stats-grid" id="statsGrid"></div>
+        </div>
+        
+        <div class="plot-container">
+            <div id="comparisonPlot"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Dados dos fluidos com diferentes temperaturas de referência
+        const fluids = {
+            'FP20': {
+                eta_ref: 0.0385,
+                c1: 1.85,
+                c2: 120.0,
+                beta0: 1.35e-3,
+                beta1: 5.0e-6,
+                T_ref: 25,
+                P_ref: 1,
+                color: 'Reds',
+                lineColor: '#FF6B6B'
+            },
+            'SR10': {
+                eta_ref: 0.0160,
+                c1: 1.69,
+                c2: 120.0,
+                beta0: 2.00e-3,
+                beta1: 1.4e-5,
+                T_ref: 80,
+                P_ref: 1,
+                color: 'Blues',
+                lineColor: '#4ECDC4'
+            },
+            'B34': {
+                eta_ref: 0.0290,
+                c1: 1.84,
+                c2: 137.7,
+                beta0: 1.94e-3,
+                beta1: 2.2e-5,
+                T_ref: 80,
+                P_ref: 1,
+                color: 'Greens',
+                lineColor: '#45B7D1'
+            },
+            'B128': {
+                eta_ref: 0.0600,
+                c1: 1.58,
+                c2: 138.7,
+                beta0: 2.04e-3,
+                beta1: 2.1e-5,
+                T_ref: 80,
+                P_ref: 1,
+                color: 'Purples',
+                lineColor: '#96CEB4'
+            }
+        };
+        
+        function calculateViscosity(fluid, T, P) {
+            const dT = T - fluid.T_ref;
+            const dP = P - fluid.P_ref;
+            const tempTerm = -2.303 * fluid.c1 * dT / (fluid.c2 + dT);
+            const pressureTerm = (fluid.beta0 + fluid.beta1 * dT) * dP;
+            return fluid.eta_ref * Math.exp(tempTerm + pressureTerm);
+        }
+        
+        function createSurfaceData(fluid, useLog = true) {
+            const temps = [];
+            const pressures = [];
+            const viscosities = [];
+            
+            // Criar grade de temperatura e pressão
+            for (let t = 25; t <= 140; t += 2) {
+                temps.push(t);
+            }
+            // Pressão de 1 a 600 bar (condições realistas de poço)
+            for (let p = 1; p <= 600; p += 12) {
+                pressures.push(p);
+            }
+            
+            // Calcular viscosidade para cada ponto da grade
+            for (let p of pressures) {
+                const row = [];
+                for (let t of temps) {
+                    const visc = calculateViscosity(fluid, t, p) * 1000; // converter para mPa·s
+                    row.push(useLog ? Math.log10(visc) : visc);
+                }
+                viscosities.push(row);
+            }
+            
+            return { temps, pressures, viscosities };
+        }
+        
+        function updatePlots() {
+            const selectedFluid = document.getElementById('fluidSelect').value;
+            const plotType = document.getElementById('plotType').value;
+            const useLog = document.getElementById('logScale').value === 'log';
+            
+            const mainContainer = document.getElementById('mainPlotContainer');
+            mainContainer.innerHTML = '';
+            
+            if (selectedFluid === 'all') {
+                // Comparação de todos os fluidos
+                plotComparison(useLog);
+            } else {
+                // Fluido individual
+                const fluid = fluids[selectedFluid];
+                
+                if (plotType === 'both') {
+                    mainContainer.innerHTML = '<div class="grid-2"><div class="plot-container"><div id="plot3d"></div></div><div class="plot-container"><div id="plotContour"></div></div></div>';
+                    plot3DSurface(selectedFluid, fluid, useLog, 'plot3d');
+                    plotContour(selectedFluid, fluid, useLog, 'plotContour');
+                } else if (plotType === 'surface') {
+                    mainContainer.innerHTML = '<div class="plot-container"><div id="plot3d"></div></div>';
+                    plot3DSurface(selectedFluid, fluid, useLog, 'plot3d');
+                } else {
+                    mainContainer.innerHTML = '<div class="plot-container"><div id="plotContour"></div></div>';
+                    plotContour(selectedFluid, fluid, useLog, 'plotContour');
+                }
+                
+                updateStats(selectedFluid, fluid);
+            }
+            
+            // Sempre plotar comparação 2D
+            plotComparison2D();
+        }
+        
+        function plot3DSurface(name, fluid, useLog, divId) {
+            const data = createSurfaceData(fluid, useLog);
+            
+            const trace = {
+                x: data.temps,
+                y: data.pressures,
+                z: data.viscosities,
+                type: 'surface',
+                colorscale: fluid.color,
+                colorbar: {
+                    title: useLog ? 'log₁₀(η) [mPa·s]' : 'η [mPa·s]',
+                    thickness: 20
+                },
+                contours: {
+                    z: {
+                        show: true,
+                        usecolormap: true,
+                        highlightcolor: "#42f462",
+                        project: { z: true }
+                    }
+                }
+            };
+            
+            // Adicionar ponto de referência
+            const refVisc = fluid.eta_ref * 1000;
+            const refPoint = {
+                x: [fluid.T_ref],
+                y: [fluid.P_ref],
+                z: [useLog ? Math.log10(refVisc) : refVisc],
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: {
+                    color: 'yellow',
+                    size: 10,
+                    symbol: 'diamond',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                },
+                name: 'Ponto de Referência'
+            };
+            
+            const layout = {
+                title: `${name} - Superfície de Viscosidade 3D`,
+                scene: {
+                    xaxis: {
+                        title: 'Temperatura (°C)',
+                        gridcolor: '#e0e0e0'
+                    },
+                    yaxis: {
+                        title: 'Pressão (bar)',
+                        gridcolor: '#e0e0e0',
+                        range: [1, 600]
+                    },
+                    zaxis: {
+                        title: useLog ? 'log₁₀(η) [mPa·s]' : 'η [mPa·s]',
+                        gridcolor: '#e0e0e0'
+                    },
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1.5 }
+                    }
+                },
+                height: 600,
+                margin: { t: 50, b: 50, l: 50, r: 50 }
+            };
+            
+            Plotly.newPlot(divId, [trace, refPoint], layout);
+        }
+        
+        function plotContour(name, fluid, useLog, divId) {
+            const data = createSurfaceData(fluid, useLog);
+            
+            const trace = {
+                x: data.temps,
+                y: data.pressures,
+                z: data.viscosities,
+                type: 'contour',
+                colorscale: fluid.color,
+                colorbar: {
+                    title: useLog ? 'log₁₀(η) [mPa·s]' : 'η [mPa·s]',
+                    thickness: 20
+                },
+                contours: {
+                    showlabels: true,
+                    labelfont: {
+                        size: 12,
+                        color: 'white'
+                    }
+                },
+                line: {
+                    smoothing: 0.85
+                }
+            };
+            
+            // Adicionar ponto de referência
+            const refVisc = fluid.eta_ref * 1000;
+            const refPoint = {
+                x: [fluid.T_ref],
+                y: [fluid.P_ref],
+                mode: 'markers',
+                type: 'scatter',
+                marker: {
+                    color: 'yellow',
+                    size: 15,
+                    symbol: 'star',
+                    line: {
+                        color: 'black',
+                        width: 2
+                    }
+                },
+                name: 'Ponto de Referência'
+            };
+            
+            const layout = {
+                title: `${name} - Mapa de Contorno de Viscosidade`,
+                xaxis: {
+                    title: 'Temperatura (°C)',
+                    gridcolor: '#e0e0e0'
+                },
+                yaxis: {
+                    title: 'Pressão (bar)',
+                    gridcolor: '#e0e0e0',
+                    range: [1, 600]
+                },
+                height: 600
+            };
+            
+            Plotly.newPlot(divId, [trace, refPoint], layout);
+        }
+        
+        function plotComparison(useLog) {
+            const mainContainer = document.getElementById('mainPlotContainer');
+            mainContainer.innerHTML = '<div class="grid-2"><div class="plot-container"><div id="plot3d1"></div></div><div class="plot-container"><div id="plot3d2"></div></div></div><div class="grid-2"><div class="plot-container"><div id="plot3d3"></div></div><div class="plot-container"><div id="plot3d4"></div></div></div>';
+            
+            let index = 1;
+            for (const [name, fluid] of Object.entries(fluids)) {
+                plot3DSurface(name, fluid, useLog, `plot3d${index}`);
+                index++;
+            }
+        }
+        
+        function plotComparison2D() {
+            const traces = [];
+            
+            // Temperatura fixa (80°C), variando pressão
+            const pressures = [];
+            for (let p = 1; p <= 600; p += 6) {
+                pressures.push(p);
+            }
+            
+            for (const [name, fluid] of Object.entries(fluids)) {
+                const viscosities = pressures.map(p => calculateViscosity(fluid, 80, p) * 1000);
+                traces.push({
+                    x: pressures,
+                    y: viscosities,
+                    name: `${name} @ 80°C`,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: fluid.lineColor,
+                        width: 3
+                    }
+                });
+            }
+            
+            // Pressão fixa (300 bar), variando temperatura
+            const temps = [];
+            for (let t = 25; t <= 140; t += 1) {
+                temps.push(t);
+            }
+            
+            for (const [name, fluid] of Object.entries(fluids)) {
+                const viscosities = temps.map(t => calculateViscosity(fluid, t, 300) * 1000);
+                traces.push({
+                    x: temps,
+                    y: viscosities,
+                    name: `${name} @ 300 bar`,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: fluid.lineColor,
+                        width: 3,
+                        dash: 'dash'
+                    },
+                    xaxis: 'x2',
+                    yaxis: 'y2'
+                });
+            }
+            
+            const layout = {
+                title: 'Comparação 2D: Efeitos de Temperatura e Pressão',
+                grid: {
+                    rows: 1,
+                    columns: 2,
+                    pattern: 'independent'
+                },
+                xaxis: {
+                    title: 'Pressão (bar)',
+                    gridcolor: '#e0e0e0',
+                    range: [0, 600]
+                },
+                yaxis: {
+                    title: 'Viscosidade (mPa·s)',
+                    gridcolor: '#e0e0e0',
+                    type: 'log'
+                },
+                xaxis2: {
+                    title: 'Temperatura (°C)',
+                    gridcolor: '#e0e0e0'
+                },
+                yaxis2: {
+                    title: 'Viscosidade (mPa·s)',
+                    gridcolor: '#e0e0e0',
+                    type: 'log'
+                },
+                height: 400
+            };
+            
+            Plotly.newPlot('comparisonPlot', traces, layout);
+        }
+        
+        function updateStats(name, fluid) {
+            const statsBox = document.getElementById('statsBox');
+            const statsGrid = document.getElementById('statsGrid');
+            
+            statsBox.style.display = 'block';
+            
+            // Calcular estatísticas
+            const viscAt25C1bar = calculateViscosity(fluid, 25, 1) * 1000;
+            const viscAt140C1bar = calculateViscosity(fluid, 140, 1) * 1000;
+            const viscAt25C600bar = calculateViscosity(fluid, 25, 600) * 1000;
+            const viscAt140C600bar = calculateViscosity(fluid, 140, 600) * 1000;
+            
+            const tempRatio = viscAt25C1bar / viscAt140C1bar;
+            const pressureRatio = viscAt25C600bar / viscAt25C1bar;
+            
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${viscAt25C1bar.toFixed(1)}</div>
+                    <div class="stat-label">η @ 25°C, 1 bar (mPa·s)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${viscAt140C1bar.toFixed(1)}</div>
+                    <div class="stat-label">η @ 140°C, 1 bar (mPa·s)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${viscAt25C600bar.toFixed(1)}</div>
+                    <div class="stat-label">η @ 25°C, 600 bar (mPa·s)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${viscAt140C600bar.toFixed(1)}</div>
+                    <div class="stat-label">η @ 140°C, 600 bar (mPa·s)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${tempRatio.toFixed(1)}x</div>
+                    <div class="stat-label">Redução por Temperatura (25→140°C)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${pressureRatio.toFixed(1)}x</div>
+                    <div class="stat-label">Aumento por Pressão (1→600 bar)</div>
+                </div>
+            `;
+        }
+        
+        function resetView() {
+            const plots = document.querySelectorAll('.js-plotly-plot');
+            plots.forEach(plot => {
+                if (plot.layout && plot.layout.scene) {
+                    Plotly.relayout(plot, {
+                        'scene.camera': {
+                            eye: { x: 1.5, y: 1.5, z: 1.5 }
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Inicializar
+        updatePlots();
+    </script>
+</body>
+</html>
