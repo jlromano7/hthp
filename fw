@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fortune's Weave · Squad Builder</title>
+<style>
+:root{--bg:#0e1316;--panel:#161f25;--panel2:#1d2931;--line:#2c3b46;--txt:#e5ecf1;--mut:#8b9eab;--gold:#d8b45a;--acc:#4fa3d9}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0 10px 0 0;color:var(--gold)}
+header .sp{flex:1}
+button,select,input[type=text],input[type=number]{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:inherit}
+input[type=number]{width:64px}
+button{cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#04121c;font-weight:600}
+label.ck{display:inline-flex;gap:5px;align-items:center;color:var(--mut);cursor:pointer}
+main{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;padding:12px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+.side{position:sticky;top:64px;max-height:calc(100vh - 76px);overflow:auto}
+@media(max-width:1050px){main{grid-template-columns:1fr}.side{position:static;max-height:none}}
+.filters{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lbl{color:var(--mut);font-size:12px;min-width:44px}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;user-select:none;font-size:12px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#04121c;font-weight:600}
+.chip.gold{background:var(--gold);border-color:var(--gold);color:#1a1405;font-weight:600}
+.chip.unc{border-style:dashed;border-color:var(--acc);color:var(--acc)}
+.mut{color:var(--mut);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px;min-height:120px}
+.card{position:relative;display:flex;gap:8px;padding:6px 26px 6px 6px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--fc);border-radius:8px;cursor:pointer}
+.card:hover{border-color:var(--acc);border-left-color:var(--fc)}
+.card.used{opacity:.45}
+.por{width:52px;height:52px;flex:none;border-radius:6px;background:var(--fc);color:#0b0f12;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.por img{width:100%;height:100%;object-fit:cover;display:block}
+.info{min-width:0;flex:1}
+.nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rl{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rl b{color:var(--gold);font-weight:600}
+.tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.tg{font-size:10.5px;padding:1px 6px;border-radius:4px;background:#22323d;border:1px solid #36505f;white-space:nowrap}
+.tg.unc{border-style:dashed;color:var(--mut)}
+.tg.zero{opacity:.3}
+.tg.role{background:#3a3220;border-color:#6b5a2c;color:var(--gold)}
+.edit{position:absolute;top:4px;right:4px;padding:1px 6px;font-size:12px;opacity:.55}
+.edit:hover{opacity:1}
+.badge{position:absolute;bottom:4px;right:6px;font-size:10px;color:var(--gold);font-weight:600}
+.squad{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:var(--panel2);cursor:pointer}
+.squad.act{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.squad.over{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.sqh{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.sqh input{flex:1;min-width:0}
+.cnt{font-weight:600;color:var(--gold);min-width:34px;text-align:right}
+.slots{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.slot{aspect-ratio:1/1.25;border:1px dashed var(--line);border-radius:6px;display:flex;flex-direction:column;align-items:center;overflow:hidden;font-size:9.5px;text-align:center}
+.slot.full{border:1px solid var(--fc);cursor:pointer;background:#141c22}
+.slot.full:hover{border-color:#e07a5f}
+.slot .por{width:100%;height:auto;aspect-ratio:1;border-radius:5px 5px 0 0;font-size:13px}
+.slot span{padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sum{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:14px;max-width:min(1200px,96vw)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h3{margin:0 0 10px;color:var(--gold);font-size:15px}
+.fld{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.end{justify-content:flex-end;margin-top:10px}
+.cv{margin-top:8px;max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:6px}
+#cropCv{display:block;touch-action:none;cursor:crosshair}
+.gout{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px;max-height:30vh;overflow:auto}
+.gcell{display:flex;flex-direction:column;gap:3px;align-items:center}
+.gcell img{width:72px;height:72px;border-radius:6px}
+.gcell select{width:100%;font-size:11px;padding:3px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#24343f;border:1px solid var(--acc);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fortune's Weave · Squad Builder</h1>
+  <button id="bCrop">Recortar print</button>
+  <button id="bNew">+ Personagem</button>
+  <label class="ck"><input type="checkbox" id="ckDup"> permitir repetidos entre squads</label>
+  <span class="sp"></span>
+  <label class="ck"><input type="checkbox" id="ckPor" checked> exportar com retratos</label>
+  <button id="bExp">Exportar JSON</button>
+  <button id="bImp">Importar JSON</button>
+  <input type="file" id="fImp" accept=".json,application/json" hidden>
+  <button id="bReset">Resetar</button>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="filters">
+      <div class="row">
+        <input type="text" id="q" placeholder="Buscar nome..." style="flex:1;min-width:160px">
+        <select id="fac"></select>
+        <span class="mut" id="nVis"></span>
+      </div>
+      <div class="row"><span class="lbl">Role</span><span id="roleChips" class="row"></span></div>
+      <div class="row"><span class="lbl">Tags</span><span id="tagChips" class="row"></span><span class="chip" id="mode"></span></div>
+      <div class="row">
+        <label class="ck"><input type="checkbox" id="ckConf"> só tags confirmadas</label>
+        <label class="ck"><input type="checkbox" id="ckHide"> esconder quem já está em squad</label>
+        <button id="bClrF">Limpar filtros</button>
+      </div>
+      <div class="mut">Clique adiciona ou remove do squad ativo (borda dourada). Também dá pra arrastar para qualquer squad, ou arrastar de volta para a lista para remover. Tags tracejadas com ? não são confirmadas.</div>
+    </div>
+    <div class="grid" id="roster"></div>
+  </section>
+  <aside class="panel side"><div id="squads"></div></aside>
+</main>
+
+<dialog id="dlgEdit">
+  <h3 id="eTitle">Editar</h3>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <div>
+      <div id="ePor" class="por" style="width:110px;height:110px;font-size:32px"></div>
+      <div class="row" style="margin-top:6px"><button id="ePorUp">Upload</button><button id="ePorDel">Remover</button></div>
+      <input type="file" id="ePorFile" accept="image/*" hidden>
+    </div>
+    <div style="flex:1;min-width:260px">
+      <div class="fld"><span class="mut">Nome</span><input type="text" id="eName"></div>
+      <div class="fld"><span class="mut">Role</span><select id="eRole"></select></div>
+      <div class="fld"><span class="mut">Facção</span><input type="text" id="eFac" list="facList"><datalist id="facList"></datalist></div>
+    </div>
+  </div>
+  <div class="fld"><span class="mut">Tags (clique liga ou desliga; tracejada = não confirmada, um clique confirma)</span><div id="eTags" class="row"></div></div>
+  <div class="row"><input type="text" id="eNewTag" placeholder="nova tag"><button id="eAddTag">Adicionar tag</button><button id="eConfAll">Confirmar todas</button></div>
+  <div class="row end"><button id="eDel" style="margin-right:auto">Excluir personagem</button><button id="eCancel">Cancelar</button><button id="eSave" class="pri">Salvar</button></div>
+</dialog>
+
+<dialog id="dlgCrop">
+  <h3>Recortar retratos de um print</h3>
+  <div class="row">
+    <input type="file" id="cropFile" accept="image/*">
+    <label class="ck"><input type="radio" name="cm" value="manual" checked> Manual</label>
+    <label class="ck"><input type="radio" name="cm" value="grid"> Grade</label>
+  </div>
+  <div class="row" id="manualCtl" style="margin-top:6px">Personagem: <select id="cropChar"></select><span class="mut">Arraste um quadrado sobre o rosto. Avança sozinho para o próximo sem retrato.</span></div>
+  <div class="row" id="gridCtl" style="margin-top:6px" hidden>Colunas <input type="number" id="gCols" value="9" min="1" max="30"> Linhas <input type="number" id="gRows" value="2" min="1" max="20"><span id="gMsg" class="mut"></span><button id="bGReset">Recomeçar</button></div>
+  <div class="cv"><canvas id="cropCv" width="10" height="10"></canvas></div>
+  <div id="gOut" class="gout"></div>
+  <div class="row end"><button id="gApply" class="pri" hidden>Aplicar recortes</button><button id="cropClose">Fechar</button></div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+/* ===================== DADOS ===================== */
+const TAGS0 = ['war','nuker','healer','anti-mage','tank','evasion dps','flier'];
+const ROLES = {P:'Protagonista', FL:'Flame Lord', SL:'Side Lord', R:'Recruta'};
+const FCOL = {
+  "Savior's Army":'#e9e4d4', "Ribeira Winds":'#7cc6a4', "House Lamine":'#9a7fd1',
+  "Megaira's Beacon":'#e6b85c', "Rose Tempest":'#e07a8f', "Mane of Flames":'#e2703a',
+  "Moon's Lie":'#6f8fd8', "Linarian Morning Dew":'#8fc75a', "Brides of the White Raven":'#c9d3dc',
+  "Outros":'#8b9eab'
+};
+/* [nome, role, facção, tags iniciais NÃO confirmadas (baseadas nas descrições oficiais)] */
+const SEED = [
+  ['Eshmel','P',"Savior's Army",[]],
+  ['Hong Hua','R',"Savior's Army",['nuker']],
+  ['Troy','R',"Savior's Army",['war']],
+  ['Cai','FL','Ribeira Winds',['war']],
+  ['Tialla','R','Ribeira Winds',[]],
+  ['Peter','R','Ribeira Winds',[]],
+  ['Ultand','R','Ribeira Winds',['healer','war']],
+  ['Dietrich','FL','House Lamine',['war']],
+  ['Fabio','R','House Lamine',['nuker']],
+  ['Esmeralda','R','House Lamine',['tank']],
+  ['Mikaela','R','House Lamine',['war']],
+  ['Theodora','FL',"Megaira's Beacon",['tank']],
+  ['Bonaventure','R',"Megaira's Beacon",['war','nuker']],
+  ['Tobias','R',"Megaira's Beacon",['war','tank']],
+  ['Lysander','R',"Megaira's Beacon",['war']],
+  ['Lilian','R',"Megaira's Beacon",[]],
+  ['Leda','FL','Rose Tempest',['evasion dps']],
+  ['Buccar','R','Rose Tempest',['tank']],
+  ['Sirocco','R','Rose Tempest',[]],
+  ['Mu','R','Rose Tempest',[]],
+  ['Olympia','R','Rose Tempest',['healer']],
+  ['Bertrand','SL','Mane of Flames',['war']],
+  ['Gaitz','R','Mane of Flames',['war']],
+  ['Dante','R','Mane of Flames',['nuker']],
+  ['Goliath','R','Mane of Flames',['tank']],
+  ['Jester','R','Mane of Flames',['evasion dps']],
+  ['Talimun','SL',"Moon's Lie",[]],
+  ['Ursula','R',"Moon's Lie",[]],
+  ['Simon','R',"Moon's Lie",['war']],
+  ['Ludia','R',"Moon's Lie",['war']],
+  ['Fianna','R',"Moon's Lie",['healer']],
+  ['Orchel','SL','Linarian Morning Dew',['war']],
+  ['Diego','R','Linarian Morning Dew',['tank']],
+  ['Ninae','R','Linarian Morning Dew',['anti-mage']],
+  ['Seteth','R','Linarian Morning Dew',[]],
+  ['Loretta','R','Linarian Morning Dew',['evasion dps']],
+  ['Anatolia','SL','Brides of the White Raven',['evasion dps']],
+  ['Shan Lan','R','Brides of the White Raven',['healer']],
+  ['Nezah','R','Brides of the White Raven',['war']],
+  ['Dadao','R','Brides of the White Raven',['war']],
+  ['Halvin','R','Brides of the White Raven',[]],
+  ['Nathan','R',"Arago's Elite Squad",['war']],
+  ['Creek','R',"Arago's Elite Squad",['tank']],
+  ['Alexandra','R','Silver Knights of Therus',['flier','evasion dps']],
+  ['Zarcone','R','Gaia Brigade',['war']],
+  ['Jasmine','R','Palman Rain',['tank']],
+  ['Inyoni','R','Comrades of Braganca',[]],
+  ['Kiroc','R','Black Bird Pirates',['war']],
+  ['Peppe','R','Brigid Army',['evasion dps']],
+  ['Benditz','R','Knights of the Thundercloud',['war']],
+  ['Nuzzuo','R','Hal Hali Tribe',['war']],
+  ['Sofia','R','Dagdan Temples',['healer']],
+  ['Centurio','R','Dagdan Temples',['tank']],
+  ['Guzran','R','Outros',['war']],
+  ['Nydine','R','Outros',['flier']],
+  ['Io','R','Outros',['war']],
+  ['Catania','R','Outros',['war']],
+  ['Noctula','R','Outros',['evasion dps']],
+  ['Yang Jie','R','Outros',['healer','war']],
+  ['Majide','R','Outros',['war']]
+];
+
+/* ===================== UTIL ===================== */
+const KEY = 'fefw-squads-v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const slug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'p';
+const initials = n => String(n).split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0,2).toUpperCase();
+function fcol(f){ if (FCOL[f]) return FCOL[f]; let h = 0; for (const ch of String(f)) h = (h*31 + ch.charCodeAt(0)) % 360; return `hsl(${h},45%,62%)`; }
+let tT; function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('show'), 2800); }
+
+/* ===================== ESTADO ===================== */
+function fresh(){
+  const chars = {}, order = [];
+  SEED.forEach(([n,r,f,t]) => { const id = slug(n); chars[id] = {name:n, role:r, faction:f, tags:Object.fromEntries(t.map(x => [x,'u'])), por:null, custom:false}; order.push(id); });
+  return norm({v:1, chars, order, tagList:[...TAGS0], squads:[], active:0, allowDup:false});
+}
+function norm(s){
+  if (!s || s.v !== 1 || !s.chars || !Array.isArray(s.order) || !Array.isArray(s.squads)) return null;
+  s.squads = s.squads.slice(0,5);
+  while (s.squads.length < 5) s.squads.push({name:'Squad ' + (s.squads.length+1), members:[]});
+  s.squads.forEach(q => { q.name = q.name || 'Squad'; q.members = (q.members || []).filter(id => s.chars[id]).slice(0,8); });
+  s.order = s.order.filter(id => s.chars[id]);
+  Object.keys(s.chars).forEach(id => { if (!s.order.includes(id)) s.order.push(id); });
+  if (!Array.isArray(s.tagList)) s.tagList = [...TAGS0];
+  Object.values(s.chars).forEach(c => { c.tags = c.tags || {}; Object.keys(c.tags).forEach(t => { if (!s.tagList.includes(t)) s.tagList.push(t); }); });
+  s.active = Math.min(Math.max(+s.active || 0, 0), 4);
+  s.allowDup = !!s.allowDup;
+  return s;
+}
+function load(){ try { return norm(JSON.parse(localStorage.getItem(KEY))); } catch(e){ return null; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast('Falha ao salvar no navegador (limite de espaço?). Exporte o JSON.'); } }
+let S = load() || fresh();
+const F = {q:'', roles:new Set(), tags:new Set(), mode:'and', fac:'', onlyConf:false, hide:false};
+const failed = new Set();
+
+/* ===================== RENDER ===================== */
+function porHTML(id){
+  const c = S.chars[id];
+  if (c.por) return `<div class="por"><img src="${c.por}" alt="" draggable="false"></div>`;
+  if (!failed.has(id)) return `<div class="por"><img src="retratos/${id}.png" alt="" draggable="false" onerror="porFail('${id}',this)"></div>`;
+  return `<div class="por">${esc(initials(c.name))}</div>`;
+}
+function porFail(id, img){ failed.add(id); const d = img.parentNode; if (d && S.chars[id]) d.textContent = initials(S.chars[id].name); }
+function squadsOf(id){ return S.squads.map((q,i) => q.members.includes(id) ? i : -1).filter(i => i >= 0); }
+
+function visible(){
+  const q = F.q.trim().toLowerCase();
+  return S.order.filter(id => {
+    const c = S.chars[id]; if (!c) return false;
+    if (q && !c.name.toLowerCase().includes(q)) return false;
+    if (F.roles.size && !F.roles.has(c.role)) return false;
+    if (F.fac && c.faction !== F.fac) return false;
+    if (F.tags.size){
+      const has = [...F.tags].map(t => c.tags[t] && (!F.onlyConf || c.tags[t] === 'c'));
+      if (F.mode === 'and' ? !has.every(Boolean) : !has.some(Boolean)) return false;
+    }
+    if (F.hide && squadsOf(id).length) return false;
+    return true;
+  });
+}
+
+function renderFilters(){
+  $('#roleChips').innerHTML = Object.entries(ROLES).map(([k,v]) => `<span class="chip ${F.roles.has(k)?'gold':''}" data-role="${k}">${v}</span>`).join('');
+  $('#tagChips').innerHTML = S.tagList.map(t => `<span class="chip ${F.tags.has(t)?'on':''}" data-tag="${esc(t)}">${esc(t)}</span>`).join('');
+  $('#mode').textContent = F.mode === 'and' ? 'modo: E (todas)' : 'modo: OU (qualquer)';
+  const facs = [...new Set(S.order.map(id => S.chars[id].faction))].sort();
+  if (F.fac && !facs.includes(F.fac)) F.fac = '';
+  $('#fac').innerHTML = '<option value="">Todas as facções</option>' + facs.map(f => `<option value="${esc(f)}" ${f===F.fac?'selected':''}>${esc(f)}</option>`).join('');
+  $('#facList').innerHTML = facs.map(f => `<option value="${esc(f)}">`).join('');
+  $('#ckDup').checked = S.allowDup;
+}
+
+function renderRoster(){
+  const list = visible();
+  $('#nVis').textContent = `${list.length} de ${S.order.length}`;
+  $('#roster').innerHTML = list.map(id => {
+    const c = S.chars[id], where = squadsOf(id);
+    const tags = Object.entries(c.tags).map(([t,st]) => `<span class="tg ${st==='u'?'unc':''}" title="${st==='u'?'não confirmado':'confirmado'}">${esc(t)}${st==='u'?'?':''}</span>`).join('');
+    return `<div class="card ${where.length?'used':''}" draggable="true" data-id="${id}" style="--fc:${fcol(c.faction)}">
+      ${porHTML(id)}
+      <div class="info"><div class="nm">${esc(c.name)}</div>
+      <div class="rl">${c.role!=='R'?'<b>'+ROLES[c.role]+'</b> · ':''}${esc(c.faction)}</div>
+      <div class="tags">${tags}</div></div>
+      <button class="edit" data-edit="${id}" title="Editar">✎</button>
+      ${where.length?`<span class="badge">${where.map(i => 'S'+(i+1)).join(' ')}</span>`:''}
+    </div>`;
+  }).join('') || '<div class="mut">Nenhum personagem com esses filtros.</div>';
+}
+
+function renderSquads(){
+  $('#squads').innerHTML = S.squads.map((sq,i) => {
+    const slots = [];
+    for (let k = 0; k < 8; k++){
+      const id = sq.members[k];
+      slots.push(id && S.chars[id]
+        ? `<div class="slot full" draggable="true" data-sid="${i}" data-mid="${id}" title="${esc(S.chars[id].name)} (clique para remover)" style="--fc:${fcol(S.chars[id].faction)}">${porHTML(id)}<span>${esc(S.chars[id].name)}</span></div>`
+        : `<div class="slot"></div>`);
+    }
+    const cnt = {}, roles = {};
+    sq.members.forEach(id => { const c = S.chars[id]; if (!c) return; Object.keys(c.tags).forEach(t => cnt[t] = (cnt[t]||0)+1); if (c.role !== 'R') roles[c.role] = (roles[c.role]||0)+1; });
+    const rs = Object.entries(roles).map(([r,n]) => `<span class="tg role">${ROLES[r]} ${n}</span>`).join('');
+    const ts = S.tagList.map(t => `<span class="tg ${cnt[t]?'':'zero'}">${esc(t)} ${cnt[t]||0}</span>`).join('');
+    return `<div class="squad ${i===S.active?'act':''}" data-sq="${i}">
+      <div class="sqh"><input type="text" value="${esc(sq.name)}" data-sqname="${i}"><span class="cnt">${sq.members.length}/8</span><button data-clear="${i}">Limpar</button></div>
+      <div class="slots">${slots.join('')}</div>
+      <div class="sum">${rs}${ts}</div>
+    </div>`;
+  }).join('');
+}
+
+function render(){ renderFilters(); renderRoster(); renderSquads(); }
+function commit(){ save(); render(); }
+
+/* ===================== SQUADS ===================== */
+function addTo(si, id){
+  const sq = S.squads[si];
+  if (sq.members.includes(id)) return false;
+  if (sq.members.length >= 8){ toast(`${sq.name} já tem 8.`); return false; }
+  if (!S.allowDup){
+    const o = squadsOf(id).filter(x => x !== si);
+    if (o.length){ toast(`${S.chars[id].name} já está em ${S.squads[o[0]].name}.`); return false; }
+  }
+  sq.members.push(id); return true;
+}
+function toggleInActive(id){
+  const sq = S.squads[S.active], i = sq.members.indexOf(id);
+  if (i >= 0) sq.members.splice(i,1); else addTo(S.active, id);
+  commit();
+}
+
+/* ===================== EVENTOS PRINCIPAIS ===================== */
+$('#q').addEventListener('input', e => { F.q = e.target.value; renderRoster(); });
+$('#fac').addEventListener('change', e => { F.fac = e.target.value; renderRoster(); });
+$('#roleChips').addEventListener('click', e => { const r = e.target.closest('[data-role]')?.dataset.role; if (!r) return; F.roles.has(r) ? F.roles.delete(r) : F.roles.add(r); render(); });
+$('#tagChips').addEventListener('click', e => { const el = e.target.closest('[data-tag]'); if (!el) return; const t = el.dataset.tag; F.tags.has(t) ? F.tags.delete(t) : F.tags.add(t); render(); });
+$('#mode').addEventListener('click', () => { F.mode = F.mode === 'and' ? 'or' : 'and'; render(); });
+$('#ckConf').onchange = e => { F.onlyConf = e.target.checked; renderRoster(); };
+$('#ckHide').onchange = e => { F.hide = e.target.checked; renderRoster(); };
+$('#bClrF').onclick = () => { F.q=''; $('#q').value=''; F.roles.clear(); F.tags.clear(); F.fac=''; F.onlyConf=false; F.hide=false; $('#ckConf').checked=false; $('#ckHide').checked=false; render(); };
+$('#ckDup').onchange = e => { S.allowDup = e.target.checked; commit(); };
+
+$('#roster').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'); if (ed){ openEdit(ed.dataset.edit); return; }
+  const c = e.target.closest('.card'); if (c) toggleInActive(c.dataset.id);
+});
+
+$('#squads').addEventListener('click', e => {
+  const cl = e.target.closest('[data-clear]');
+  if (cl){ const i = +cl.dataset.clear; if (S.squads[i].members.length && confirm(`Limpar ${S.squads[i].name}?`)){ S.squads[i].members = []; commit(); } return; }
+  const sl = e.target.closest('.slot.full');
+  if (sl){ const q = S.squads[+sl.dataset.sid]; q.members = q.members.filter(x => x !== sl.dataset.mid); commit(); return; }
+  const sq = e.target.closest('.squad');
+  if (sq){ S.active = +sq.dataset.sq; save(); document.querySelectorAll('.squad').forEach(el => el.classList.toggle('act', +el.dataset.sq === S.active)); }
+});
+$('#squads').addEventListener('input', e => { const i = e.target.dataset.sqname; if (i != null){ S.squads[+i].name = e.target.value; save(); } });
+
+/* Drag and drop */
+document.addEventListener('dragstart', e => {
+  const card = e.target.closest?.('.card'), slot = e.target.closest?.('.slot.full');
+  if (card) e.dataTransfer.setData('text/plain', JSON.stringify({id:card.dataset.id, from:-1}));
+  else if (slot) e.dataTransfer.setData('text/plain', JSON.stringify({id:slot.dataset.mid, from:+slot.dataset.sid}));
+});
+document.addEventListener('dragover', e => {
+  const sq = e.target.closest?.('.squad'), ro = e.target.closest?.('#roster');
+  if (sq || ro) e.preventDefault();
+  document.querySelectorAll('.squad.over').forEach(el => { if (el !== sq) el.classList.remove('over'); });
+  if (sq) sq.classList.add('over');
+});
+document.addEventListener('dragend', () => document.querySelectorAll('.squad.over').forEach(el => el.classList.remove('over')));
+document.addEventListener('drop', e => {
+  document.querySelectorAll('.squad.over').forEach(el => el.classList.remove('over'));
+  let d; try { d = JSON.parse(e.dataTransfer.getData('text/plain')); } catch(err){ return; }
+  if (!d || !S.chars[d.id]) return;
+  const sqEl = e.target.closest?.('.squad');
+  if (sqEl){
+    e.preventDefault();
+    const to = +sqEl.dataset.sq; if (to === d.from) return;
+    if (d.from >= 0){
+      const src = S.squads[d.from], idx = src.members.indexOf(d.id);
+      if (idx >= 0) src.members.splice(idx,1);
+      if (!addTo(to, d.id) && idx >= 0) src.members.splice(idx,0,d.id);
+    } else addTo(to, d.id);
+    S.active = to; commit();
+  } else if (e.target.closest?.('#roster') && d.from >= 0){
+    e.preventDefault();
+    const m = S.squads[d.from].members, i = m.indexOf(d.id);
+    if (i >= 0) m.splice(i,1);
+    commit();
+  }
+});
+
+/* ===================== IMAGENS ===================== */
+function cropToData(img, sx, sy, sw, sh){
+  const s = Math.min(sw, sh), x = sx + (sw - s)/2, y = sy + (sh - s)/2;
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  c.getContext('2d').drawImage(img, x, y, s, s, 0, 0, 128, 128);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+function fileToPor(file){
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { res(cropToData(img, 0, 0, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(img.src); };
+    img.onerror = rej;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ===================== EDITOR ===================== */
+let ED = null;
+$('#eRole').innerHTML = Object.entries(ROLES).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+function openEdit(id){
+  const base = id ? S.chars[id] : {name:'', role:'R', faction:'Outros', tags:{}, por:null, custom:true};
+  ED = {id, c: JSON.parse(JSON.stringify(base))};
+  $('#eTitle').textContent = id ? 'Editar ' + base.name : 'Novo personagem';
+  $('#eName').value = ED.c.name; $('#eRole').value = ED.c.role; $('#eFac').value = ED.c.faction;
+  $('#eDel').hidden = !id;
+  renderETags(); renderEPor();
+  $('#dlgEdit').showModal();
+}
+function renderETags(){
+  $('#eTags').innerHTML = S.tagList.map(t => { const st = ED.c.tags[t]; return `<span class="chip ${st==='c'?'on':st==='u'?'unc':''}" data-et="${esc(t)}">${esc(t)}${st==='u'?' ?':''}</span>`; }).join('');
+}
+function renderEPor(){
+  const el = $('#ePor'); el.style.setProperty('--fc', fcol($('#eFac').value));
+  el.innerHTML = ED.c.por ? `<img src="${ED.c.por}" alt="">` : esc(initials($('#eName').value || '?'));
+}
+$('#eTags').onclick = e => { const el = e.target.closest('[data-et]'); if (!el) return; const t = el.dataset.et; if (ED.c.tags[t] === 'c') delete ED.c.tags[t]; else ED.c.tags[t] = 'c'; renderETags(); };
+$('#eAddTag').onclick = () => { const t = $('#eNewTag').value.trim().toLowerCase(); if (!t) return; if (!S.tagList.includes(t)){ S.tagList.push(t); save(); renderFilters(); renderSquads(); } ED.c.tags[t] = 'c'; $('#eNewTag').value = ''; renderETags(); };
+$('#eConfAll').onclick = () => { Object.keys(ED.c.tags).forEach(t => ED.c.tags[t] = 'c'); renderETags(); };
+$('#ePorUp').onclick = () => $('#ePorFile').click();
+$('#ePorFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { ED.c.por = await fileToPor(f); renderEPor(); } catch(err){ toast('Imagem inválida.'); } };
+$('#ePorDel').onclick = () => { ED.c.por = null; renderEPor(); };
+$('#eName').oninput = renderEPor; $('#eFac').oninput = renderEPor;
+$('#eCancel').onclick = () => $('#dlgEdit').close();
+$('#eSave').onclick = () => {
+  const name = $('#eName').value.trim(); if (!name){ toast('Nome obrigatório.'); return; }
+  ED.c.name = name; ED.c.role = $('#eRole').value; ED.c.faction = $('#eFac').value.trim() || 'Outros';
+  let id = ED.id;
+  if (!id){ id = slug(name); let k = 2; while (S.chars[id]) id = slug(name) + '-' + k++; S.order.push(id); }
+  S.chars[id] = ED.c; failed.delete(id);
+  $('#dlgEdit').close(); commit();
+};
+$('#eDel').onclick = () => {
+  const id = ED.id; if (!id || !confirm(`Excluir ${S.chars[id].name}? Sai de todos os squads.`)) return;
+  delete S.chars[id]; S.order = S.order.filter(x => x !== id); S.squads.forEach(q => q.members = q.members.filter(x => x !== id));
+  $('#dlgEdit').close(); commit();
+};
+$('#bNew').onclick = () => openEdit(null);
+
+/* ===================== RECORTE DE PRINT ===================== */
+let CI = null, CS = 1, drag = null, gBoxes = [], gCrops = [];
+const cv = $('#cropCv'), cx = cv.getContext('2d');
+const cropMode = () => document.querySelector('input[name=cm]:checked').value;
+const gridN = () => Math.max(1, +$('#gCols').value || 1) * Math.max(1, +$('#gRows').value || 1);
+
+function fillCropChar(keep){
+  const cur = keep || $('#cropChar').value;
+  $('#cropChar').innerHTML = S.order.map(id => `<option value="${id}">${esc(S.chars[id].name)}${S.chars[id].por?' ✓':''}</option>`).join('');
+  if (cur && S.chars[cur]) $('#cropChar').value = cur;
+}
+function nextCropChar(){
+  const cur = $('#cropChar').value, i = S.order.indexOf(cur);
+  const rest = S.order.slice(i+1).concat(S.order.slice(0, i+1));
+  const nx = rest.find(id => !S.chars[id].por) || cur;
+  fillCropChar(nx);
+}
+function drawCrop(){
+  cx.clearRect(0, 0, cv.width, cv.height);
+  if (!CI) return;
+  cx.drawImage(CI, 0, 0, cv.width, cv.height); cx.lineWidth = 2;
+  cx.strokeStyle = '#d8b45a'; gBoxes.forEach(b => cx.strokeRect(b.x*CS, b.y*CS, b.s*CS, b.s*CS));
+  cx.strokeStyle = 'rgba(79,163,217,.9)'; gCrops.forEach(b => cx.strokeRect(b.x*CS, b.y*CS, b.s*CS, b.s*CS));
+  if (drag){ const b = dragBox(); cx.strokeStyle = '#4fa3d9'; cx.strokeRect(b.x, b.y, b.s, b.s); }
+}
+function pt(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left) * cv.width / r.width, y:(e.clientY - r.top) * cv.height / r.height}; }
+function dragBox(){ const dx = drag.x1 - drag.x0, dy = drag.y1 - drag.y0, s = Math.max(Math.abs(dx), Math.abs(dy)); return {x: dx < 0 ? drag.x0 - s : drag.x0, y: dy < 0 ? drag.y0 - s : drag.y0, s}; }
+function gReset(){
+  gBoxes = []; gCrops = []; $('#gOut').innerHTML = ''; $('#gApply').hidden = true;
+  $('#gMsg').textContent = 'Arraste sobre a PRIMEIRA célula (canto superior esquerdo).';
+  drawCrop();
+}
+function computeGrid(){
+  const cols = Math.max(1, +$('#gCols').value || 1), rows = Math.max(1, +$('#gRows').value || 1);
+  const a = gBoxes[0], b = gBoxes[1] || a, s = (a.s + b.s)/2;
+  const ax = a.x + a.s/2, ay = a.y + a.s/2, bx = b.x + b.s/2, by = b.y + b.s/2;
+  const dx = cols > 1 ? (bx - ax)/(cols - 1) : 0, dy = rows > 1 ? (by - ay)/(rows - 1) : 0;
+  gCrops = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++){
+    const x = ax + dx*c - s/2, y = ay + dy*r - s/2;
+    gCrops.push({x, y, s, data: cropToData(CI, x, y, s, s)});
+  }
+  gBoxes = [];
+  $('#gMsg').textContent = `${gCrops.length} recortes. Associe cada um a um personagem e clique em Aplicar.`;
+  const opts = '<option value="">(ignorar)</option>' + S.order.map(id => `<option value="${id}">${esc(S.chars[id].name)}${S.chars[id].por?' ✓':''}</option>`).join('');
+  $('#gOut').innerHTML = gCrops.map((g,i) => `<div class="gcell"><img src="${g.data}" alt=""><select data-gi="${i}">${opts}</select></div>`).join('');
+  $('#gApply').hidden = false;
+}
+
+$('#bCrop').onclick = () => { fillCropChar(); if (!$('#gMsg').textContent) gReset(); $('#dlgCrop').showModal(); };
+$('#cropClose').onclick = () => $('#dlgCrop').close();
+$('#cropFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    CI = img;
+    const maxW = Math.min(1150, window.innerWidth * 0.9 - 40);
+    CS = Math.min(1, maxW / img.naturalWidth);
+    cv.width = Math.round(img.naturalWidth * CS); cv.height = Math.round(img.naturalHeight * CS);
+    gReset();
+  };
+  img.onerror = () => toast('Imagem inválida.');
+  img.src = URL.createObjectURL(f);
+};
+document.querySelectorAll('input[name=cm]').forEach(r => r.onchange = () => {
+  const g = cropMode() === 'grid'; $('#gridCtl').hidden = !g; $('#manualCtl').hidden = g; gReset();
+});
+$('#bGReset').onclick = gReset;
+$('#gCols').onchange = gReset; $('#gRows').onchange = gReset;
+
+cv.addEventListener('pointerdown', e => { if (!CI) return; const p = pt(e); drag = {x0:p.x, y0:p.y, x1:p.x, y1:p.y}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!drag) return; const p = pt(e); drag.x1 = p.x; drag.y1 = p.y; drawCrop(); });
+cv.addEventListener('pointercancel', () => { drag = null; drawCrop(); });
+cv.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const b = dragBox(); drag = null;
+  if (b.s < 6){ drawCrop(); return; }
+  const box = {x: b.x/CS, y: b.y/CS, s: b.s/CS};
+  if (cropMode() === 'manual'){
+    const id = $('#cropChar').value;
+    if (!id){ toast('Escolha o personagem.'); drawCrop(); return; }
+    S.chars[id].por = cropToData(CI, box.x, box.y, box.s, box.s); failed.delete(id);
+    commit(); toast(`Retrato de ${S.chars[id].name} salvo.`); nextCropChar();
+  } else {
+    gBoxes.push(box);
+    if (gBoxes.length === 1 && gridN() > 1) $('#gMsg').textContent = 'Agora arraste sobre a ÚLTIMA célula (canto inferior direito).';
+    else computeGrid();
+  }
+  drawCrop();
+});
+$('#gApply').onclick = () => {
+  let n = 0;
+  document.querySelectorAll('#gOut select').forEach(sel => { if (sel.value){ S.chars[sel.value].por = gCrops[+sel.dataset.gi].data; failed.delete(sel.value); n++; } });
+  commit(); toast(`${n} retrato(s) aplicado(s).`); gReset(); fillCropChar();
+};
+
+/* ===================== EXPORT / IMPORT ===================== */
+$('#bExp').onclick = () => {
+  const d = JSON.parse(JSON.stringify(S));
+  if (!$('#ckPor').checked) Object.values(d.chars).forEach(c => c.por = null);
+  const blob = new Blob([JSON.stringify(d)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'squads.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('#bImp').onclick = () => $('#fImp').click();
+$('#fImp').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const d = norm(JSON.parse(await f.text())); if (!d) throw 0;
+    Object.entries(d.chars).forEach(([id,c]) => { if (!c.por && S.chars[id] && S.chars[id].por) c.por = S.chars[id].por; });
+    S = d; failed.clear(); commit(); toast('Importado.');
+  } catch(err){ toast('JSON inválido.'); }
+};
+$('#bReset').onclick = () => {
+  if (!confirm('Apagar squads, tags editadas e retratos salvos neste navegador?')) return;
+  localStorage.removeItem(KEY); S = fresh(); failed.clear(); commit();
+};
+
+/* ===================== INÍCIO ===================== */
+(async () => {
+  if (!localStorage.getItem(KEY)){
+    try {
+      const r = await fetch('squads.json', {cache:'no-store'});
+      if (r.ok){ const d = norm(await r.json()); if (d){ S = d; save(); } }
+    } catch(e){}
+  }
+  render();
+})();
+</script>
+</body>
+</html>
